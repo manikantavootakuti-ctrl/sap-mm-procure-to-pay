@@ -1,43 +1,32 @@
-# 03 – RFQ & Quotation
+# 03 - RFQ and quotation
 
-Used when no fixed source exists or competitive bidding is required.
+Only needed when there's no fixed source or you want competing quotes. In a lot of companies this step is skipped completely or done outside SAP (Ariba, email...).
 
-## Process
+## Classic flow
 
-```mermaid
-flowchart LR
-    PR[PR] --> RFQ[RFQ<br/>ME41]
-    RFQ --> V1[Supplier A]
-    RFQ --> V2[Supplier B]
-    RFQ --> V3[Supplier C]
-    V1 --> Q[Maintain Quotations<br/>ME47]
-    V2 --> Q
-    V3 --> Q
-    Q --> CMP[Price Comparison<br/>ME49]
-    CMP --> WIN[Accept winner<br/>reject others ME47]
-    WIN --> PO[Create PO<br/>with reference]
-```
+PR -> RFQ (ME41) to each supplier -> enter their quotes (ME47) -> compare (ME49) -> accept the best one, reject the rest -> create PO with reference to the quotation.
 
-## Transactions & Apps
+In classic MM you get one RFQ per supplier. They're grouped together by a collective number (SUBMI) so ME49 can compare them.
 
-| Action | ECC / GUI | S/4HANA Fiori |
-|--------|-----------|---------------|
-| Create RFQ | `ME41` | *Manage RFQs* |
-| Maintain quotation | `ME47` | *Manage Supplier Quotations* |
-| Price comparison | `ME49` | *Compare Supplier Quotations* |
-| Rejection letters | `ME4S` / output | – |
+## T-codes / apps
 
-**Tables:** RFQs and quotations are stored in `EKKO` / `EKPO` with document category `EKKO-BSTYP = 'A'`.
+- create RFQ: ME41 / *Manage RFQs*
+- maintain quotation: ME47 / *Manage Supplier Quotations*
+- price comparison: ME49 / *Compare Supplier Quotations*
+- rejection letters: ME4S or via output
 
-| `BSTYP` | Document |
-|---------|----------|
-| `A` | RFQ / Quotation |
-| `F` | Purchase Order |
-| `K` | Contract |
-| `L` | Scheduling Agreement |
+## Where it's stored
+
+Same tables as POs - EKKO / EKPO. The document category (EKKO-BSTYP) tells you what it is:
+
+- A = RFQ / quotation
+- F = purchase order
+- K = contract
+- L = scheduling agreement
+
+Good to remember when writing queries on EKKO - always filter on BSTYP.
 
 ## Notes
 
-- One RFQ is created **per supplier** in classic MM; collective number (`SUBMI`) groups them for comparison.
-- In S/4HANA, the new RFQ object can be sent to SAP Ariba Sourcing or the Ariba Network for supplier collaboration.
-- Accepted quotation prices can update the info record (`ME47` → *Info update*).
+- In S/4 the newer RFQ object can be sent to Ariba Sourcing / Ariba Network for supplier collaboration.
+- Accepted quote prices can update the info record (info update flag in ME47).
