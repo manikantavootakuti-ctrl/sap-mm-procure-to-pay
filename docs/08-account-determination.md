@@ -1,66 +1,61 @@
-# 08 – Automatic Account Determination (MM–FI)
+# 08 - Account determination (MM-FI)
 
-Every valuated goods movement and invoice finds its G/L accounts automatically. Configuration: **`OBYC`** (SPRO → *MM → Valuation and Account Assignment → Account Determination → Account Determination Without Wizard*).
+Every valuated goods movement and every invoice finds its G/L accounts on its own. The config for that is OBYC.
 
-## How the G/L Account Is Found
+SPRO path: MM > Valuation and Account Assignment > Account Determination > Account Determination Without Wizard.
 
-```mermaid
-flowchart TD
-    MT[Movement type<br/>e.g. 101] --> TK[Transaction / event key<br/>BSX · WRX · GBB · PRD]
-    MT --> AM[Account modifier<br/>e.g. VBR · BSA · AUF]
-    PL[Plant] --> VA[Valuation area] --> VG[Valuation grouping code<br/>OMWD]
-    MAT[Material master<br/>Accounting 1 view] --> VC[Valuation class<br/>e.g. 3000]
-    CC[Company code] --> CoA[Chart of accounts]
-    TK --> OBYC{{OBYC table}}
-    AM --> OBYC
-    VG --> OBYC
-    VC --> OBYC
-    CoA --> OBYC
-    OBYC --> GL[G/L account]
-```
+## How SAP finds the account
 
-## Key Transaction Keys
+It combines:
 
-| Key | Purpose | Typical use |
-|-----|---------|-------------|
-| `BSX` | Inventory posting | Stock account on GR/GI |
-| `WRX` | GR/IR clearing | GR for PO, invoice |
-| `GBB` | Offsetting entry for inventory | Consumption, scrapping, initial entry (with account modifiers `VBR`, `VNG`, `BSA`, `AUF`, …) |
-| `PRD` | Price differences | Price control S; invoice variances |
-| `KON` | Consignment liabilities | Consignment withdrawal |
-| `FRL` / `FRN` | External service (subcontracting) | Subcontracting GR |
-| `UMB` | Revaluation gain/loss | Price change in previous period |
-| `KDM` | Exchange rate differences | Foreign currency invoices |
+- chart of accounts (from the company code)
+- valuation grouping code (plant -> valuation area -> OMWD)
+- transaction key (BSX, WRX, GBB...) - comes from the movement type
+- account modifier (VBR, BSA, AUF...) - also from the movement type, only for some keys like GBB
+- valuation class (from the material master, Accounting 1 view)
 
-## Worked Example
+and looks up the G/L account in OBYC.
 
-**Setup:** raw material `RM-100`, valuation class `3000`, price control `S`, standard price **€10.00**.
-PO: 100 PC at **€10.50** = €1,050. Invoice: 100 PC at €10.50.
+## Keys you need to know
 
-**GR (mvt 101)**
+| key | used for |
+|---|---|
+| BSX | inventory account |
+| WRX | GR/IR clearing |
+| GBB | offsetting entry - consumption, scrapping, initial stock etc. (with modifiers VBR, VNG, BSA, AUF...) |
+| PRD | price differences |
+| KON | consignment liabilities |
+| FRL / FRN | subcontracting services |
+| UMB | revaluation gain/loss |
+| KDM | exchange rate differences |
 
-| Dr/Cr | Key | Account | Amount |
-|-------|-----|---------|--------|
-| Dr | BSX | Raw material inventory | 1,000.00 |
-| Dr | PRD | Price difference | 50.00 |
-| Cr | WRX | GR/IR clearing | 1,050.00 |
+## Example
 
-**Invoice (MIRO)** – 19 % input tax
+Material RM-100, valuation class 3000, price control S, standard price 10.00 EUR.
+PO: 100 PC at 10.50 = 1,050.00. Invoice comes in at the same price, 19% VAT.
 
-| Dr/Cr | Key | Account | Amount |
-|-------|-----|---------|--------|
-| Dr | WRX | GR/IR clearing | 1,050.00 |
-| Dr | VST | Input tax | 199.50 |
-| Cr | – | Supplier (recon. account) | 1,249.50 |
+GR (101):
 
-> With price control **V** (moving average), the €50 would go to `BSX` instead of `PRD` and increase the moving average price.
+| | key | account | amount |
+|---|---|---|---|
+| Dr | BSX | raw material stock | 1,000.00 |
+| Dr | PRD | price difference | 50.00 |
+| Cr | WRX | GR/IR | 1,050.00 |
 
-## Related Config
+Invoice (MIRO):
 
-| Step | T-code |
-|------|--------|
-| Group valuation areas | `OMWD` |
-| Valuation classes & account category references | `OMSK` |
-| Account modifiers for movement types | `OMWN` |
-| Account determination | `OBYC` |
-| Simulate account determination | `OMWB` (simulation) |
+| | key | account | amount |
+|---|---|---|---|
+| Dr | WRX | GR/IR | 1,050.00 |
+| Dr | VST | input tax | 199.50 |
+| Cr | | supplier | 1,249.50 |
+
+If the material had price control V instead, the 50.00 would go to BSX (stock) and the moving average price would go up.
+
+## Related config
+
+- OMWD - group valuation areas
+- OMSK - valuation classes, account category reference
+- OMWN - account modifiers per movement type
+- OBYC - the account determination itself
+- OMWB - simulate it (very useful when you're debugging a "no account" error)
