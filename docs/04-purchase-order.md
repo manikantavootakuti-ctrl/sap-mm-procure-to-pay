@@ -1,53 +1,45 @@
-# 04 – Purchase Order (PO)
+# 04 - Purchase order
 
-A legally binding request to a supplier. The PO is the central document of P2P – GR and invoice both reference it.
+The PO is the document everything else hangs off. GR and invoice both reference it, and the PO history tells you the whole story.
 
-## Transactions & Apps
+## T-codes / apps
 
-| Action | ECC / GUI | S/4HANA Fiori |
-|--------|-----------|---------------|
-| Create | `ME21N` | *Create Purchase Order – Advanced* |
-| Change / Display | `ME22N` / `ME23N` | *Manage Purchase Orders* |
-| Auto-create from PRs | `ME59N` | *Manage Purchase Requisitions – Professional* |
-| Release | `ME29N` (individual) · `ME28` (collective) | *My Inbox* (flexible workflow) |
-| Reporting | `ME2N` (by number) · `ME2L` (supplier) · `ME2M` (material) · `ME80FN` | *Monitor Purchase Order Items* |
-| Output | `ME9F` | *Output Request Items* |
+- ME21N create, ME22N change, ME23N display. Fiori: *Create Purchase Order - Advanced*, *Manage Purchase Orders*
+- ME59N - auto-create POs from PRs
+- ME29N (single) / ME28 (collective) - release
+- reports: ME2N (by PO number), ME2L (by supplier), ME2M (by material), ME80FN (general). Fiori: *Monitor Purchase Order Items*
+- ME9F - output
 
-## Key Tables
+## Tables
 
-| Table | Content |
-|-------|---------|
-| `EKKO` | Header (supplier, purch. org, doc type, currency) |
-| `EKPO` | Items (material, qty, price, plant, item category) |
-| `EKET` | Schedule lines (delivery dates & quantities) |
-| `EKKN` | Account assignment |
-| `EKBE` | **PO history** – every GR and invoice against the item |
-| `PRCD_ELEMENTS` | Pricing conditions (S/4HANA; `KONV` in ECC) |
+- EKKO - header
+- EKPO - item
+- EKET - schedule lines
+- EKKN - account assignment
+- EKBE - PO history (every GR and invoice against the item). This is the one I end up in most.
+- PRCD_ELEMENTS - pricing conditions in S/4. In ECC it was KONV.
 
-## Important Item-Level Controls
+## Item level controls that cause confusion
 
-| Field | Effect |
-|-------|--------|
-| **GR indicator** | Goods receipt expected |
-| **GR non-valuated** | GR posts quantity only (common with account assignment) |
-| **Invoice receipt indicator** | Invoice expected |
-| **GR-based IV** | Invoice must be matched to individual GRs |
-| **Confirmation control** | Requires order acknowledgment / inbound delivery |
-| **Overdelivery / underdelivery tolerance** | Allowed GR deviation in % |
+- GR indicator - goods receipt expected
+- GR non-valuated - GR is quantity only, no posting. Typical for account-assigned items.
+- IR indicator - invoice expected
+- GR-based IV - invoice has to be matched to specific GRs, not just the PO line
+- confirmation control - needs an order acknowledgement / inbound delivery
+- over/under delivery tolerance - % deviation allowed at GR
 
-## Pricing Procedure
+## Pricing procedure
 
-Determined from: **Schema group of purch. org + schema group of supplier → pricing procedure** (e.g. `RM0000`).
+Schema group of the purch. org + schema group of the supplier -> pricing procedure (standard one is RM0000).
 
-Typical conditions: `PB00` gross price · `RA01` discount % · `FRB1` freight · `SKTO` cash discount.
+Common conditions: PB00 gross price, RA01 discount %, FRB1 freight, SKTO cash discount.
 
-## Output Management
+## Output
 
-| | ECC | S/4HANA |
-|--|-----|---------|
-| Technology | NAST / message determination (`NACE`) | BRF+-based output management (*Output Parameter Determination*) |
-| Form | SAPscript / Smart Forms | Adobe Forms / Fiori form templates |
+ECC used NAST / message determination (NACE) with SAPscript or Smart Forms.
 
-## Release Strategy
+S/4 uses the BRF+ based output management (Output Parameter Determination) and Adobe forms. If you're migrating, plan time for the PO form - it always takes longer than expected.
 
-Same classification approach as PR, using characteristics on `CEKKO` (e.g. `CEKKO_GNETW` net value, `CEKKO_EKORG`). Release status `EKKO-FRGKE`; PO cannot be output until released.
+## Release strategy
+
+Works the same way as for PRs, just with characteristics on CEKKO (e.g. CEKKO_GNETW for net value, CEKKO_EKORG). Release status is in EKKO-FRGKE. A PO that isn't released can't be output.
