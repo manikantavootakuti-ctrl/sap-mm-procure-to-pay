@@ -1,68 +1,57 @@
-# 01 – Master Data
+# 01 - Master data
 
-Clean master data is the foundation of P2P. Most P2P errors (wrong price, wrong G/L account, missing source) trace back here.
+Honestly most P2P issues I've looked at end up being master data issues. Wrong price on the PO? Check the info record. Wrong G/L on the GR? Check the valuation class. So this comes first.
 
-## 1. Material Master
+## Material master
 
-| Item | Detail |
-|------|--------|
-| T-codes | `MM01` create · `MM02` change · `MM03` display · `MM60` material list |
-| Fiori | *Manage Product Master Data* |
-| Key tables | `MARA` (general) · `MARC` (plant) · `MARD` (storage location) · `MBEW` (valuation) · `MAKT` (description) |
+MM01 / MM02 / MM03. In Fiori it's *Manage Product Master Data*.
 
-**Views used in P2P**
+Tables you'll end up in: MARA (general), MARC (plant), MARD (storage location), MBEW (valuation), MAKT (description).
 
-| View | Key fields for P2P |
-|------|-------------------|
-| Basic Data | Base unit of measure, material group |
-| Purchasing | Purchasing group, order unit, GR processing time |
-| MRP 1–4 | MRP type, lot size, reorder point, planned delivery time |
-| Accounting 1 | **Valuation class** (drives G/L account), price control `S`/`V`, standard/moving price |
-| Plant data / Storage | Storage location, batch management |
+Views that matter for purchasing:
 
-> **Tip:** Price control `S` (standard price) creates price-difference postings (PRD) at GR/IR; price control `V` (moving average) absorbs differences into stock value where stock is available.
+- Basic data - base UoM, material group
+- Purchasing - purchasing group, order unit, GR processing time
+- MRP 1-4 - MRP type, lot size, planned delivery time
+- Accounting 1 - valuation class and price control. This one decides which G/L account the GR posts to, so get it right.
 
-## 2. Supplier Master (Business Partner)
+Price control S vs V is worth understanding properly. With S (standard price) any difference between PO price and standard price goes to the price difference account (PRD). With V (moving average) the difference goes into the stock value instead, as long as there's stock to absorb it.
 
-| | SAP ECC | SAP S/4HANA |
-|--|---------|-------------|
-| Create | `XK01` / `MK01` / `FK01` | **`BP`** (role `FLVN00` FI vendor, `FLVN01` purchasing) |
-| Tables | `LFA1`, `LFB1`, `LFM1` | `BUT000` + `LFA1`, `LFB1`, `LFM1` (kept via CVI) |
-| Fiori | – | *Manage Business Partner Master Data* |
+## Supplier = Business Partner (in S/4)
 
-**Customer-Vendor Integration (CVI)** synchronizes BP with the classic vendor tables. In S/4HANA, `XK01` etc. redirect to `BP`.
+In ECC you had XK01 / MK01 / FK01. In S/4HANA it's all transaction BP. The old T-codes just redirect you to BP.
 
-Key supplier data for P2P:
-- **Company code level:** reconciliation account, payment terms, payment methods
-- **Purchasing org level:** order currency, Incoterms, GR-based invoice verification flag, partner functions
+Roles you need for a normal supplier:
+- FLVN00 - FI vendor (company code data)
+- FLVN01 - supplier for purchasing (purch. org data)
 
-## 3. Purchasing Info Record
+The classic tables LFA1, LFB1, LFM1 still exist and are kept in sync through CVI (customer-vendor integration). BP general data sits in BUT000.
 
-Stores the price and conditions for a **material + supplier** combination.
+What matters from the supplier for P2P:
+- company code level: reconciliation account, payment terms, payment methods
+- purch. org level: order currency, incoterms, GR-based IV flag, partner functions
 
-| Item | Detail |
-|------|--------|
-| T-codes | `ME11` / `ME12` / `ME13` |
-| Fiori | *Manage Purchasing Info Records* |
-| Tables | `EINA` (general) · `EINE` (purch. org) · conditions in `A017`/`A018` + `KONP` |
-| Categories | Standard · Subcontracting · Pipeline · Consignment |
+## Info record
 
-Info records default the price into the PO and are updated automatically when the *Info update* indicator is set on the PO item.
+ME11 / ME12 / ME13. Price and conditions for one material + supplier combo.
 
-## 4. Source List & Quota Arrangement
+Tables: EINA (general), EINE (purch. org level). Condition records via A017/A018 and KONP.
 
-| Object | T-code | Purpose |
-|--------|--------|---------|
-| Source list | `ME01` | Allowed/fixed/blocked suppliers per material & plant (`EORD`) |
-| Quota arrangement | `MEQ1` | Split requirements across suppliers by % (`EQUK`, `EQUP`) |
-| Fiori | *Manage Sources of Supply* | |
+Types: standard, subcontracting, pipeline, consignment.
 
-Source list can be made mandatory per plant in config (*Source list requirement at plant level*).
+The PO picks up the price from here. If "info update" is ticked on the PO item, the info record gets updated from the PO - handy, but it also means a typo on a PO can quietly change the info record.
 
-## Configuration Checklist
+## Source list and quota arrangement
 
-- [ ] Material types & number ranges (`OMS2`)
-- [ ] Valuation classes & account category references (`OMSK`)
-- [ ] BP roles, groupings and CVI mapping
-- [ ] Partner functions for suppliers
-- [ ] Source list requirement per plant
+- Source list - ME01, table EORD. Which suppliers are allowed / fixed / blocked for a material in a plant. You can make it mandatory per plant in config.
+- Quota arrangement - MEQ1 (EQUK, EQUP). Splits demand across suppliers by percentage.
+
+Fiori: *Manage Sources of Supply* covers both.
+
+## Config I usually check
+
+- material types and number ranges (OMS2)
+- valuation classes / account category reference (OMSK)
+- BP roles, groupings, CVI number range mapping
+- partner functions for suppliers
+- source list requirement per plant
