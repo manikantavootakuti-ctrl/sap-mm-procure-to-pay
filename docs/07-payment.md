@@ -1,41 +1,33 @@
-# 07 – Payment
+# 07 - Payment
 
-After invoice posting, the supplier open item sits in FI-AP until it is paid. Payment is owned by **FI**, but MM consultants must understand it for end-to-end testing and issue analysis.
+Strictly speaking this is FI territory, not MM. But when you test P2P end to end you need to get the invoice paid, and a lot of "why wasn't the supplier paid" questions end up back with MM anyway. So here's the minimum.
 
-## Transactions & Apps
+## T-codes / apps
 
-| Action | ECC / GUI | S/4HANA Fiori |
-|--------|-----------|---------------|
-| Automatic payment run | `F110` | *Manage Automatic Payments* |
-| Manual outgoing payment | `F-53` / `F-58` (with print) | *Post Outgoing Payments* |
-| Supplier line items | `FBL1N` | *Manage Supplier Line Items* |
-| Supplier balances | `FK10N` | *Display Supplier Balances* |
+- F110 - automatic payment run. Fiori: *Manage Automatic Payments*
+- F-53 manual outgoing payment (F-58 with print)
+- FBL1N - supplier line items. Fiori: *Manage Supplier Line Items*
+- FK10N - supplier balances
 
-## F110 Steps
+## F110 in short
 
-1. **Parameters** – run date, identification, company codes, payment methods, next posting date, suppliers
-2. **Proposal** – system selects due items (respecting payment blocks, e.g. `R` from LIV)
-3. **Edit proposal** – review exceptions
-4. **Payment run** – posts payment documents
-5. **Printout / DME** – payment medium (e.g. SEPA XML)
+1. parameters - run date, ID, company codes, payment methods, next posting date, suppliers
+2. proposal - SAP picks the due items (skips anything with a payment block)
+3. check / edit the proposal
+4. payment run - posts the payment docs
+5. print / DME file (SEPA XML in Europe)
 
-## Accounting Entry
+## Posting
 
-| Dr/Cr | Account |
-|-------|---------|
-| Dr | Supplier (clears open item) |
-| Cr | Bank / bank clearing |
-| Cr | Cash discount received (if taken) |
+Dr supplier (clears the open item) / Cr bank or bank clearing. Plus cash discount if it was taken.
 
-## What MM Influences
+## Where MM affects payment
 
-| MM / master data | Effect on payment |
-|------------------|-------------------|
-| Payment terms (BP / PO) | Due date & cash discount |
-| Invoice blocks from LIV | Item excluded from F110 until released |
-| Supplier bank details (BP) | Where money is paid |
-| Partner functions (invoicing party) | Who gets paid |
+- payment terms (from BP or the PO) -> due date and discount
+- invoice blocked in LIV -> not paid until released in MRBR
+- bank details on the BP -> where the money goes
+- invoicing party partner function -> who gets paid
 
-## Full P2P Document Trail
+## Following the trail
 
-Use **PO history** (`ME23N` → *Purchase Order History* tab, table `EKBE`) to trace GR and invoice documents, then `FBL1N` / *Manage Supplier Line Items* for the clearing (payment) document.
+ME23N -> PO history tab (that's EKBE) shows the GR and invoice docs. From the invoice you go to FBL1N to find the clearing document = the payment.
