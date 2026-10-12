@@ -1,38 +1,36 @@
-# 09 – SAP ECC vs S/4HANA: What Changes for MM
+# 09 - ECC vs S/4HANA, what changes for MM
 
-SAP ECC 6.0 mainstream maintenance ends in **2027** (optional extended maintenance to 2030), so most ECC customers are planning or running their S/4HANA migration. These are the changes an MM consultant must know.
+ECC 6.0 mainstream maintenance ends in 2027 (extended maintenance until 2030 for those who pay for it), so most ECC customers are either planning or already in their S/4 move. These are the MM-relevant changes I think you really need to know.
 
-## Simplification Items – Summary
+## Main differences
 
-| Area | SAP ECC | SAP S/4HANA | Impact |
-|------|---------|-------------|--------|
-| Supplier master | `XK01`/`MK01`/`FK01` | **Business Partner** (`BP`) with CVI | CVI conversion is a mandatory pre-step for migration |
-| Material documents | `MKPF` + `MSEG` + aggregate tables | **`MATDOC`** single table | Custom reports reading aggregates must be checked |
-| Inventory transactions | `MB01`, `MB1A`, `MB1B`, `MB1C`, `MB31`… | **`MIGO`** only | Retrain users |
-| Accounting | `BSEG`, `COEP`, `FAGLFLEXA`… | **`ACDOCA`** (Universal Journal) | Real-time MM–FI–CO reconciliation |
-| Material number | 18 characters | **40 characters** (extended, optional) | Interfaces & custom code |
-| MRP | `MD01` / `MD02` classic | **MRP Live** (`MD01N`) | HANA-optimized, faster planning |
-| Pricing table | `KONV` | **`PRCD_ELEMENTS`** | Custom code reading `KONV` |
-| Output management | NAST / `NACE` | **BRF+ output management** | New config & forms |
-| Approvals | Classic release strategy | **Flexible workflow** (recommended) | Configured in Fiori |
-| UI | SAP GUI | **SAP Fiori** apps + GUI | Role-based launchpad design |
-| Supplier evaluation | `ME61` etc. | *Supplier Evaluation* Fiori apps | Analytics embedded |
+| | ECC | S/4HANA |
+|---|---|---|
+| supplier master | XK01 / MK01 / FK01 | BP, with CVI. CVI has to be done before the conversion. |
+| material docs | MKPF + MSEG + aggregate tables | MATDOC. Custom reports on the old aggregates need checking. |
+| inventory T-codes | MB01, MB1A, MB1B, MB1C, MB31... | MIGO only |
+| accounting | BSEG, COEP, FAGLFLEXA... | ACDOCA (universal journal) |
+| material number | 18 chars | up to 40 chars (optional) - watch interfaces |
+| MRP | MD01 / MD02 | MRP Live, MD01N |
+| pricing table | KONV | PRCD_ELEMENTS |
+| output | NAST / NACE | BRF+ output management |
+| approvals | classic release strategy | flexible workflow recommended (classic still works) |
+| UI | SAP GUI | Fiori + GUI |
+| supplier evaluation | ME61 etc. | Supplier Evaluation apps in Fiori |
 
-## Migration Readiness Checklist (MM)
+## Checklist for an MM workstream
 
-- [ ] Run **Simplification Item Check** / Readiness Check, review MM items
-- [ ] Complete **CVI** – every vendor must map to a BP
-- [ ] Clean up open POs, old PRs and GR/IR balances before cut-over
-- [ ] Review custom ABAP using `MSEG`, aggregate stock tables, `KONV`
-- [ ] Decide classic release strategy vs flexible workflow
-- [ ] Redesign PO and RFQ output forms
-- [ ] Define Fiori roles/catalogs for buyers, warehouse clerks, AP clerks
-- [ ] Data migration objects in **SAP S/4HANA Migration Cockpit** (new implementations): materials, suppliers (BP), info records, source lists, open POs, inventory balances
+- run the simplification item check / readiness check, go through the MM items
+- CVI - every vendor must end up as a BP
+- clean up before cutover: old open POs, old PRs, GR/IR balances
+- custom ABAP reading MSEG, aggregate stock tables or KONV
+- decide: keep classic release strategy or move to flexible workflow
+- PO / RFQ forms for the new output management
+- Fiori roles for buyers, warehouse, AP
+- for greenfield: migration objects in the Migration Cockpit - materials, suppliers, info records, source lists, open POs, stock balances
 
-## Migration Approaches
+## Approaches
 
-| Approach | Description |
-|----------|-------------|
-| **Greenfield** | New implementation, migrate master data & open items only |
-| **Brownfield** | System conversion of existing ECC (keeps history & config) |
-| **Selective / Bluefield** | Selective data transition – mix of both |
+- greenfield - new system, only master data and open items come over
+- brownfield - convert the existing ECC system, history and config stay
+- selective / "bluefield" - somewhere in between, selective data transition
