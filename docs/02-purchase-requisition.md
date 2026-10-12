@@ -1,62 +1,49 @@
-# 02 – Purchase Requisition (PR)
+# 02 - Purchase requisition
 
-An internal request to procure a material or service. A PR is **not** sent to suppliers and has **no accounting impact**.
+A PR is just an internal request - "we need this". It doesn't go to the supplier and doesn't post anything in FI.
 
-## Ways a PR is Created
+## Where PRs come from
 
-```mermaid
-flowchart TD
-    M[Manual entry<br/>ME51N / Fiori] --> PR[(Purchase Requisition<br/>EBAN)]
-    R[MRP run<br/>MD01N MRP Live] --> PR
-    P[PM / PS orders<br/>non-stock components] --> PR
-    S[Self-service / catalog] --> PR
-    PR --> REL{Release<br/>required?}
-    REL -- Yes --> APP[ME54N / ME55<br/>or Fiori approval]
-    REL -- No --> PO[Convert to PO]
-    APP --> PO
-```
+- manual entry - ME51N or the Fiori app *Create Purchase Requisition*
+- MRP - MD01N (MRP Live) in S/4, MD01/MD02 in ECC
+- PM / PS orders for non-stock components
+- self-service / catalog requests
 
-## Transactions & Apps
+## T-codes
 
-| Action | ECC / GUI | Fiori (S/4HANA) |
-|--------|-----------|-----------------|
-| Create | `ME51N` | *Create Purchase Requisition* |
-| Change / Display | `ME52N` / `ME53N` | *Manage Purchase Requisitions* |
-| Release (individual) | `ME54N` | *My Inbox* (flexible workflow) |
-| Release (collective) | `ME55` | *My Inbox* |
-| List | `ME5A` | *Monitor Purchase Requisition Items* |
-| Assign & convert to PO | `ME57` | *Manage Purchase Requisitions – Professional* |
+| What | GUI | Fiori |
+|---|---|---|
+| create | ME51N | Create Purchase Requisition |
+| change / display | ME52N / ME53N | Manage Purchase Requisitions |
+| release one | ME54N | My Inbox (flexible workflow) |
+| release many | ME55 | My Inbox |
+| list | ME5A | Monitor Purchase Requisition Items |
+| assign source + convert | ME57 | Manage Purchase Requisitions - Professional |
 
-**Tables:** `EBAN` (items) · `EBKN` (account assignment)
+Tables: EBAN (items), EBKN (account assignment).
 
-## Key Fields
+## Fields worth knowing
 
-- **Document type** (`NB` standard)
-- **Item category** – blank (standard), `L` subcontracting, `K` consignment, `U` stock transfer, `D` service
-- **Account assignment category** – blank (stock), `K` cost center, `F` order, `P` project, `A` asset
-- Material / short text, quantity, delivery date, plant, purchasing group
-- Desired supplier / fixed supplier, valuation price
+- doc type - NB is the standard one
+- item category - blank = standard, L = subcontracting, K = consignment, U = stock transfer, D = service
+- account assignment - blank = stock, K = cost center, F = order, P = project (WBS), A = asset
+- desired / fixed supplier, valuation price
 
-## Release Strategy (Classic)
+## Release strategy (classic)
 
-Classification-based release strategy:
+This is the classification-based one. Steps roughly:
 
-1. Create characteristics (e.g. `CEBAN_GSWRT` total value, `CEBAN_WERKS` plant) – `CT04`
-2. Create class of class type `032` – `CL02`
-3. Configure release groups, release codes, release indicators, release strategies – SPRO → *MM → Purchasing → Purchase Requisition → Release Procedure → With Classification*
-4. Assign values to strategy in classification
+1. characteristics in CT04, e.g. CEBAN_GSWRT (total value), CEBAN_WERKS (plant)
+2. class with class type 032 in CL02
+3. release groups, codes, indicators, strategies in SPRO: MM > Purchasing > Purchase Requisition > Release Procedure > Procedure with Classification
+4. maintain the values in the classification tab of the strategy
 
-| Release indicator | Meaning |
-|-------------------|---------|
-| `X` | Blocked – no PO possible |
-| `2` | Released – RFQ/PO possible |
+Release indicator X = blocked, 2 = released (RFQ/PO can be created).
 
-> **S/4HANA:** *Flexible Workflow for Purchase Requisitions* is the recommended approach (configured via Fiori app *Manage Workflows for Purchase Requisitions*). Classic release strategy is still supported.
+In S/4 SAP recommends flexible workflow instead (configured in the Fiori app *Manage Workflows for Purchase Requisitions*). The classic strategy still works though, and plenty of brownfield systems keep it.
 
-## Common Issues
+## Things I check when a PR "doesn't work"
 
-| Symptom | Likely cause |
-|---------|-------------|
-| PR not converting to PO | Not released / no source of supply assigned |
-| Release strategy not triggered | Characteristic values don't match, or class not assigned |
-| MRP not creating PR | Wrong MRP type / procurement type `E` (in-house) instead of `F` |
+- PR won't convert to PO -> is it released? is there a source assigned?
+- release strategy not triggering -> characteristic values don't match, or the class isn't assigned to the release group
+- MRP not creating PRs -> procurement type is E (in-house) instead of F, or MRP type is wrong
